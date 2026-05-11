@@ -1,52 +1,8 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 
 const INITIAL_TEAMS = [
-  {
-    id: "team-a",
-    name: "Team A",
-    owner: "Owner 1",
-    retained: [
-      { id: "ra1", name: "Retained Batter", role: "Batter", amount: 14 },
-      { id: "ra2", name: "Retained All-rounder", role: "All-rounder", amount: 11 }
-    ],
-    bought: []
-  },
-  {
-    id: "team-b",
-    name: "Team B",
-    owner: "Owner 2",
-    retained: [
-      { id: "rb1", name: "Retained Bowler", role: "Bowler", amount: 10 }
-    ],
-    bought: []
-  },
-  {
-    id: "team-c",
-    name: "Team C",
-    owner: "Owner 3",
-    retained: [
-      { id: "rc1", name: "Retained Keeper", role: "Wicketkeeper", amount: 12 },
-      { id: "rc2", name: "Retained Spinner", role: "Bowler", amount: 8 },
-      { id: "rc3", name: "Retained Finisher", role: "Batter", amount: 7 }
-    ],
-    bought: []
-  },
-  {
-    id: "team-d",
-    name: "Team D",
-    owner: "Owner 4",
-    retained: [],
-    bought: []
-  }
-];
-
-const INITIAL_PLAYERS = [
-  { id: "p1", name: "Arjun Rao", role: "Top-order Batter", base: 2, status: "pending" },
-  { id: "p2", name: "Kabir Sen", role: "Fast Bowler", base: 1.5, status: "pending" },
-  { id: "p3", name: "Rishav Das", role: "Wicketkeeper", base: 1, status: "pending" },
-  { id: "p4", name: "Dev Malik", role: "All-rounder", base: 2, status: "pending" },
-  { id: "p5", name: "Sameer Khan", role: "Left-arm Spinner", base: 0.75, status: "pending" },
-  { id: "p6", name: "Vivaan Mehta", role: "Finisher", base: 1.25, status: "pending" }
+  { id: "team-a", name: "Team A", owner: "Owner 1", retained: [], bought: [] },
+  { id: "team-b", name: "Team B", owner: "Owner 2", retained: [], bought: [] }
 ];
 
 function safeNumber(value) {
@@ -55,17 +11,9 @@ function safeNumber(value) {
   return number;
 }
 
-function formatMoney(value) {
+function formatLakhs(value) {
   const number = safeNumber(value);
-  return "Rs. " + number.toFixed(2) + " Cr";
-}
-
-function getBidIncrement(price) {
-  const amount = safeNumber(price);
-  if (amount < 1) return 0.05;
-  if (amount < 2) return 0.1;
-  if (amount < 5) return 0.2;
-  return 0.25;
+  return "Rs. " + number.toFixed(2) + " L";
 }
 
 function sumAmounts(list) {
@@ -80,15 +28,9 @@ function cloneInitialTeams() {
       id: team.id,
       name: team.name,
       owner: team.owner,
-      retained: team.retained.map(function (player) { return { ...player }; }),
+      retained: [],
       bought: []
     };
-  });
-}
-
-function cloneInitialPlayers() {
-  return INITIAL_PLAYERS.map(function (player) {
-    return { ...player };
   });
 }
 
@@ -101,7 +43,7 @@ const styles = {
     padding: 20
   },
   container: {
-    maxWidth: 1280,
+    maxWidth: 1320,
     margin: "0 auto"
   },
   header: {
@@ -142,7 +84,7 @@ const styles = {
   },
   mainGrid: {
     display: "grid",
-    gridTemplateColumns: "minmax(320px, 0.95fr) minmax(360px, 1.7fr)",
+    gridTemplateColumns: "minmax(320px, 0.9fr) minmax(360px, 1.8fr)",
     gap: 18
   },
   card: {
@@ -182,8 +124,8 @@ const styles = {
     color: "white"
   },
   blueButton: {
-    background: "#3b82f6",
-    color: "white",
+    background: "#38bdf8",
+    color: "#020617",
     width: "100%",
     marginTop: 12
   },
@@ -200,6 +142,13 @@ const styles = {
   yellowButton: {
     background: "#fbbf24",
     color: "#020617",
+    width: "100%",
+    marginTop: 10
+  },
+  blackButton: {
+    background: "#020617",
+    border: "1px solid #334155",
+    color: "#e5e7eb",
     width: "100%",
     marginTop: 10
   },
@@ -288,26 +237,21 @@ function statusPill(status) {
 
 export default function App() {
   const [mode, setMode] = useState("retention");
-  const [startingPurse, setStartingPurse] = useState(120);
+  const [startingPurse, setStartingPurse] = useState(1200);
   const [maxSlots, setMaxSlots] = useState(25);
+  const [bidStep, setBidStep] = useState(5);
   const [teams, setTeams] = useState(cloneInitialTeams());
-  const [players, setPlayers] = useState(cloneInitialPlayers());
+  const [players, setPlayers] = useState([]);
   const [currentBid, setCurrentBid] = useState(0);
   const [highestTeamId, setHighestTeamId] = useState("");
   const [auctionLog, setAuctionLog] = useState([]);
-  const [newPlayer, setNewPlayer] = useState({ name: "", role: "", base: 1 });
-  const [retentionForm, setRetentionForm] = useState({ teamId: "team-a", name: "", role: "", amount: 1 });
+  const [newPlayer, setNewPlayer] = useState({ name: "", role: "", base: 10 });
+  const [retentionForm, setRetentionForm] = useState({ teamId: "team-a", name: "", role: "", amount: 10 });
+  const [teamForm, setTeamForm] = useState({ name: "", owner: "" });
 
   const currentPlayer = players.find(function (player) {
     return player.status === "pending";
   }) || null;
-
-  useEffect(function () {
-    if (currentPlayer) {
-      setCurrentBid(safeNumber(currentPlayer.base));
-      setHighestTeamId("");
-    }
-  }, [currentPlayer ? currentPlayer.id : "none"]);
 
   const teamStats = useMemo(function () {
     return teams.map(function (team) {
@@ -335,18 +279,21 @@ export default function App() {
   const unsoldCount = players.filter(function (player) { return player.status === "unsold"; }).length;
   const pendingCount = players.filter(function (player) { return player.status === "pending"; }).length;
 
+  const activeBid = currentPlayer ? currentBid || safeNumber(currentPlayer.base) : 0;
   const nextBidAmount = currentPlayer
     ? highestTeamId
-      ? Number((currentBid + getBidIncrement(currentBid)).toFixed(2))
+      ? Number((activeBid + safeNumber(bidStep)).toFixed(2))
       : safeNumber(currentPlayer.base)
     : 0;
 
   function resetAuction() {
     setTeams(cloneInitialTeams());
-    setPlayers(cloneInitialPlayers());
+    setPlayers([]);
     setAuctionLog([]);
-    setCurrentBid(INITIAL_PLAYERS[0].base);
+    setCurrentBid(0);
     setHighestTeamId("");
+    setNewPlayer({ name: "", role: "", base: 10 });
+    setRetentionForm({ teamId: "team-a", name: "", role: "", amount: 10 });
   }
 
   function checkTeamCanBid(teamId, amount) {
@@ -373,7 +320,7 @@ export default function App() {
       name: currentPlayer.name,
       role: currentPlayer.role,
       base: currentPlayer.base,
-      amount: currentBid,
+      amount: activeBid,
       status: "sold"
     };
 
@@ -387,7 +334,7 @@ export default function App() {
     setPlayers(function (previousPlayers) {
       return previousPlayers.map(function (player) {
         if (player.id !== currentPlayer.id) return player;
-        return { ...player, status: "sold", soldTo: highestTeamId, amount: currentBid };
+        return { ...player, status: "sold", soldTo: highestTeamId, amount: activeBid };
       });
     });
 
@@ -398,9 +345,12 @@ export default function App() {
         player: currentPlayer.name,
         role: currentPlayer.role,
         team: highestTeam ? highestTeam.name : "Unknown Team",
-        amount: currentBid
+        amount: activeBid
       }].concat(previousLog);
     });
+
+    setCurrentBid(0);
+    setHighestTeamId("");
   }
 
   function markUnsold() {
@@ -423,6 +373,9 @@ export default function App() {
         amount: 0
       }].concat(previousLog);
     });
+
+    setCurrentBid(0);
+    setHighestTeamId("");
   }
 
   function addAuctionPlayer(event) {
@@ -442,7 +395,12 @@ export default function App() {
       return previousPlayers.concat([player]);
     });
 
-    setNewPlayer({ name: "", role: "", base: 1 });
+    if (!currentPlayer) {
+      setCurrentBid(safeNumber(newPlayer.base));
+      setHighestTeamId("");
+    }
+
+    setNewPlayer({ name: "", role: "", base: 10 });
   }
 
   function addRetainedPlayer(event) {
@@ -465,8 +423,48 @@ export default function App() {
     });
 
     setRetentionForm(function (previousForm) {
-      return { ...previousForm, name: "", role: "", amount: 1 };
+      return { ...previousForm, name: "", role: "", amount: 10 };
     });
+  }
+
+  function addTeam(event) {
+    event.preventDefault();
+    const name = teamForm.name.trim();
+    if (!name) return;
+
+    const newTeam = {
+      id: "team-" + Date.now(),
+      name: name,
+      owner: teamForm.owner.trim() || "Owner",
+      retained: [],
+      bought: []
+    };
+
+    setTeams(function (previousTeams) {
+      return previousTeams.concat([newTeam]);
+    });
+
+    setTeamForm({ name: "", owner: "" });
+  }
+
+  function updateTeamName(teamId, field, value) {
+    setTeams(function (previousTeams) {
+      return previousTeams.map(function (team) {
+        if (team.id !== teamId) return team;
+        return { ...team, [field]: value };
+      });
+    });
+  }
+
+  function removeTeam(teamId) {
+    setTeams(function (previousTeams) {
+      if (previousTeams.length <= 1) return previousTeams;
+      return previousTeams.filter(function (team) { return team.id !== teamId; });
+    });
+
+    if (highestTeamId === teamId) {
+      setHighestTeamId("");
+    }
   }
 
   return (
@@ -475,13 +473,13 @@ export default function App() {
         <header style={styles.header}>
           <div>
             <div style={styles.label}>Cricket Auction Builder</div>
-            <h1 style={styles.title}>IPL-style auction dashboard</h1>
+            <h1 style={styles.title}>General auction dashboard</h1>
             <p style={styles.subtitle}>
-              Teams have fixed purse, retained players deduct budget, live bidding starts from base price, and sold players move to the winning team.
+              Add your own teams, players, retained players, base prices, purse and bid increment. All money values are in lakhs.
             </p>
           </div>
           <button onClick={resetAuction} style={{ ...styles.button, ...styles.redButton }}>
-            Reset Demo
+            Clear All Demo Data
           </button>
         </header>
 
@@ -495,17 +493,40 @@ export default function App() {
           </div>
 
           <div style={styles.card}>
-            <div style={styles.label}>Starting purse</div>
+            <div style={styles.label}>Starting purse per team - lakhs</div>
             <input
               type="number"
               min="1"
-              step="0.5"
+              step="1"
               value={startingPurse}
               onChange={function (event) { setStartingPurse(safeNumber(event.target.value)); }}
               style={styles.input}
             />
           </div>
 
+          <div style={styles.card}>
+            <div style={styles.label}>Bid increment - lakhs</div>
+            <input
+              type="number"
+              min="1"
+              step="1"
+              value={bidStep}
+              onChange={function (event) { setBidStep(safeNumber(event.target.value)); }}
+              style={styles.input}
+            />
+          </div>
+
+          <div style={styles.card}>
+            <div style={styles.label}>Auction status</div>
+            <div style={styles.statGrid}>
+              <div style={styles.statBox}><b>{soldCount}</b><br /><span style={styles.smallMuted}>Sold</span></div>
+              <div style={styles.statBox}><b>{unsoldCount}</b><br /><span style={styles.smallMuted}>Unsold</span></div>
+              <div style={styles.statBox}><b>{pendingCount}</b><br /><span style={styles.smallMuted}>Left</span></div>
+            </div>
+          </div>
+        </section>
+
+        <section style={styles.grid4}>
           <div style={styles.card}>
             <div style={styles.label}>Max squad slots</div>
             <input
@@ -518,12 +539,34 @@ export default function App() {
           </div>
 
           <div style={styles.card}>
-            <div style={styles.label}>Auction status</div>
-            <div style={styles.statGrid}>
-              <div style={styles.statBox}><b>{soldCount}</b><br /><span style={styles.smallMuted}>Sold</span></div>
-              <div style={styles.statBox}><b>{unsoldCount}</b><br /><span style={styles.smallMuted}>Unsold</span></div>
-              <div style={styles.statBox}><b>{pendingCount}</b><br /><span style={styles.smallMuted}>Left</span></div>
-            </div>
+            <div style={styles.label}>Add team</div>
+            <form onSubmit={addTeam}>
+              <input
+                placeholder="Team name"
+                value={teamForm.name}
+                onChange={function (event) { setTeamForm({ ...teamForm, name: event.target.value }); }}
+                style={styles.input}
+              />
+              <input
+                placeholder="Owner name"
+                value={teamForm.owner}
+                onChange={function (event) { setTeamForm({ ...teamForm, owner: event.target.value }); }}
+                style={styles.input}
+              />
+              <button style={{ ...styles.button, ...styles.yellowButton }}>Add Team</button>
+            </form>
+          </div>
+
+          <div style={styles.card}>
+            <div style={styles.label}>Current player pool</div>
+            <h2 style={{ marginBottom: 4 }}>{players.length}</h2>
+            <div style={styles.smallMuted}>Add players manually with name, role and base price in lakhs.</div>
+          </div>
+
+          <div style={styles.card}>
+            <div style={styles.label}>Money unit</div>
+            <h2 style={{ marginBottom: 4 }}>Lakhs</h2>
+            <div style={styles.smallMuted}>Example: 50 means Rs. 50 L. 1200 means Rs. 12 Cr.</div>
           </div>
         </section>
 
@@ -540,18 +583,18 @@ export default function App() {
                   <div style={styles.twoGrid}>
                     <div style={styles.darkBox}>
                       <div style={styles.smallMuted}>Base price</div>
-                      <h3>{formatMoney(currentPlayer.base)}</h3>
+                      <h3>{formatLakhs(currentPlayer.base)}</h3>
                     </div>
                     <div style={{ ...styles.darkBox, background: "#fbbf24", color: "#020617" }}>
                       <div>Current bid</div>
-                      <h3>{formatMoney(currentBid)}</h3>
+                      <h3>{formatLakhs(activeBid)}</h3>
                     </div>
                   </div>
 
                   <div style={{ ...styles.darkBox, marginTop: 12 }}>
                     <div style={styles.smallMuted}>Highest bidder</div>
                     <h3 style={{ marginBottom: 4 }}>{highestTeam ? highestTeam.name : "No bid yet"}</h3>
-                    <div style={styles.smallMuted}>Next valid bid: {formatMoney(nextBidAmount)}</div>
+                    <div style={styles.smallMuted}>Next valid bid: {formatLakhs(nextBidAmount)}</div>
                   </div>
 
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 14 }}>
@@ -569,8 +612,8 @@ export default function App() {
                 </div>
               ) : (
                 <div style={{ ...styles.darkBox, marginTop: 14, textAlign: "center" }}>
-                  <h2>Auction complete</h2>
-                  <p style={styles.smallMuted}>Add more players or reset the demo.</p>
+                  <h2>No player on stage</h2>
+                  <p style={styles.smallMuted}>Add auction players below. The first pending player will come on stage automatically.</p>
                 </div>
               )}
             </div>
@@ -585,19 +628,20 @@ export default function App() {
                   style={styles.input}
                 />
                 <input
-                  placeholder="Role"
+                  placeholder="Role / skill"
                   value={newPlayer.role}
                   onChange={function (event) { setNewPlayer({ ...newPlayer, role: event.target.value }); }}
                   style={styles.input}
                 />
                 <input
                   type="number"
-                  min="0.05"
-                  step="0.05"
+                  min="0"
+                  step="1"
                   value={newPlayer.base}
                   onChange={function (event) { setNewPlayer({ ...newPlayer, base: safeNumber(event.target.value) }); }}
                   style={styles.input}
                 />
+                <div style={styles.smallMuted}>Base price is in lakhs.</div>
                 <button style={{ ...styles.button, ...styles.yellowButton }}>Add Player</button>
               </form>
             </div>
@@ -621,7 +665,7 @@ export default function App() {
                   style={styles.input}
                 />
                 <input
-                  placeholder="Role"
+                  placeholder="Role / skill"
                   value={retentionForm.role}
                   onChange={function (event) { setRetentionForm({ ...retentionForm, role: event.target.value }); }}
                   style={styles.input}
@@ -629,11 +673,12 @@ export default function App() {
                 <input
                   type="number"
                   min="0"
-                  step="0.5"
+                  step="1"
                   value={retentionForm.amount}
                   onChange={function (event) { setRetentionForm({ ...retentionForm, amount: safeNumber(event.target.value) }); }}
                   style={styles.input}
                 />
+                <div style={styles.smallMuted}>Retention amount is in lakhs and deducts from purse.</div>
                 <button style={{ ...styles.button, ...styles.yellowButton }}>Add Retention</button>
               </form>
             </div>
@@ -650,19 +695,27 @@ export default function App() {
                 return (
                   <div key={team.id} style={styles.card}>
                     <div style={styles.row}>
-                      <div>
-                        <h2 style={{ margin: 0 }}>{team.name}</h2>
-                        <div style={styles.smallMuted}>{team.owner}</div>
+                      <div style={{ flex: 1 }}>
+                        <input
+                          value={team.name}
+                          onChange={function (event) { updateTeamName(team.id, "name", event.target.value); }}
+                          style={{ ...styles.input, marginTop: 0, fontWeight: 900 }}
+                        />
+                        <input
+                          value={team.owner}
+                          onChange={function (event) { updateTeamName(team.id, "owner", event.target.value); }}
+                          style={styles.input}
+                        />
                       </div>
                       <div style={{ ...styles.darkBox, textAlign: "right" }}>
                         <div style={styles.smallMuted}>Purse left</div>
-                        <b>{formatMoney(team.remaining)}</b>
+                        <b>{formatLakhs(team.remaining)}</b>
                       </div>
                     </div>
 
                     <div style={styles.statGrid}>
-                      <div style={styles.statBox}><b>{formatMoney(team.retainedSpent)}</b><br /><span style={styles.smallMuted}>Retained</span></div>
-                      <div style={styles.statBox}><b>{formatMoney(team.auctionSpent)}</b><br /><span style={styles.smallMuted}>Auction</span></div>
+                      <div style={styles.statBox}><b>{formatLakhs(team.retainedSpent)}</b><br /><span style={styles.smallMuted}>Retained</span></div>
+                      <div style={styles.statBox}><b>{formatLakhs(team.auctionSpent)}</b><br /><span style={styles.smallMuted}>Auction</span></div>
                       <div style={styles.statBox}><b>{team.squadCount}/{maxSlots}</b><br /><span style={styles.smallMuted}>Slots</span></div>
                     </div>
 
@@ -671,18 +724,25 @@ export default function App() {
                       disabled={!currentPlayer || !canBid.ok}
                       style={bidButtonStyle}
                     >
-                      Bid {formatMoney(nextBidAmount)}
+                      Bid {formatLakhs(nextBidAmount)}
                     </button>
 
                     {!canBid.ok && currentPlayer ? (
                       <p style={{ color: "#fca5a5", fontSize: 12, textAlign: "center" }}>{canBid.reason}</p>
                     ) : null}
 
+                    <button
+                      onClick={function () { removeTeam(team.id); }}
+                      style={{ ...styles.button, ...styles.blackButton }}
+                    >
+                      Remove Team
+                    </button>
+
                     <div style={{ marginTop: 12, maxHeight: 210, overflowY: "auto" }}>
                       {mode === "retention" ? team.retained.map(function (player) {
                         return (
                           <div key={player.id} style={styles.retainedItem}>
-                            <b>{player.name}</b> - {player.role} - {formatMoney(player.amount)} retained
+                            <b>{player.name}</b> - {player.role} - {formatLakhs(player.amount)} retained
                           </div>
                         );
                       }) : null}
@@ -690,12 +750,12 @@ export default function App() {
                       {team.bought.map(function (player) {
                         return (
                           <div key={player.id} style={styles.boughtItem}>
-                            <b>{player.name}</b> - {player.role} - {formatMoney(player.amount)} bought
+                            <b>{player.name}</b> - {player.role} - {formatLakhs(player.amount)} bought
                           </div>
                         );
                       })}
 
-                      {team.squadCount === 0 ? <p style={styles.smallMuted}>No players counted in this format.</p> : null}
+                      {team.squadCount === 0 ? <p style={styles.smallMuted}>No players in this team yet.</p> : null}
                     </div>
                   </div>
                 );
@@ -706,13 +766,14 @@ export default function App() {
               <div style={styles.card}>
                 <div style={styles.label}>Player queue</div>
                 <div style={{ marginTop: 12, maxHeight: 420, overflowY: "auto" }}>
+                  {players.length === 0 ? <p style={styles.smallMuted}>No players added yet.</p> : null}
                   {players.map(function (player) {
                     return (
                       <div key={player.id} style={styles.playerItem}>
                         <div style={styles.row}>
                           <div>
                             <b>{player.name}</b>
-                            <div style={styles.smallMuted}>{player.role} - Base {formatMoney(player.base)}</div>
+                            <div style={styles.smallMuted}>{player.role} - Base {formatLakhs(player.base)}</div>
                           </div>
                           <span style={statusPill(player.status)}>{player.status}</span>
                         </div>
@@ -731,7 +792,7 @@ export default function App() {
                       <div key={entry.id} style={styles.playerItem}>
                         <div style={styles.row}>
                           <b style={{ color: entry.type === "SOLD" ? "#86efac" : "#fca5a5" }}>{entry.type}</b>
-                          <b>{entry.amount ? formatMoney(entry.amount) : "None"}</b>
+                          <b>{entry.amount ? formatLakhs(entry.amount) : "None"}</b>
                         </div>
                         <div style={{ marginTop: 6 }}><b>{entry.player}</b> - {entry.role}</div>
                         <div style={styles.smallMuted}>Team: {entry.team}</div>
